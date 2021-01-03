@@ -44,16 +44,26 @@ module Jekyll
       # Recursively merge settings from the page, layout, site config & jekyll-pdf defaults
       def get_config(data)
         settings = data['pdf'].is_a?(Hash) ? data['pdf'] : {}
-        layout = @site.layouts[data['layout']].data.clone unless data['layout'].nil?
 
-        # No parent layout found - return settings hash
+        layout_name = data['layout']
+        return settings if layout_name.nil?
+        # No parent layout name found - return settings hash
+
+        layout_listing = @site.layouts[layout_name]
+        if layout_listing.nil?
+          Jekyll.logger.abort_with "Jekyll-PDF:", "No layout file... #{layout_name}.html"
+          # No parent layout found in Jekyll, abort
+        end
+
+        layout_data = layout_listing.data.clone 
         return settings if layout.nil?
+        # Issues opening layout data - return settings hash
 
-        # Merge settings with parent layout settings
-        layout['pdf'] ||= {}
-        Jekyll::Utils.deep_merge_hashes!(layout['pdf'], settings)
+        layout_data['pdf'] ||= {}
+        Jekyll::Utils.deep_merge_hashes!(layout_data['pdf'], settings)
+        # Merge found settings with parent layout settings
 
-        get_config(layout)
+        get_config(layout_data) # Traverse up the layout tree
       end
 
       # Write the PDF file
